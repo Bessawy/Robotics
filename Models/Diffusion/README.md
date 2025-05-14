@@ -94,5 +94,98 @@ The choice of schedule affects the quality of the generated samples and the stab
 
 ---
 
+# Backward Process of Diffusion Models
+
+The **backward process** in diffusion models is the reverse of the forward process. It involves gradually removing noise from a noisy sample (starting from pure Gaussian noise) to reconstruct the original data. This process is learned during training and is crucial for generating new samples from the model.
+
+---
+
+## Steps of the Backward Process
+
+### 1. **Starting Point**
+The backward process begins with a noisy sample $ x_T $, which is sampled from a standard Gaussian distribution:
+
+$$
+x_T \sim \mathcal{N}(0, I).
+$$
+
+This noisy sample represents the endpoint of the forward process, where the original data structure has been completely destroyed.
+
+---
+
+### 2. **Reverse Transition**
+At each time step $ t $, the model predicts the noise component $ \epsilon $ in the noisy data $ x_t $. Using this prediction, the model computes the denoised sample $ x_{t-1} $ for the previous time step. The reverse process is defined as:
+
+$$
+p(x_{t-1} \mid x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \Sigma_\theta(x_t, t)),
+$$
+
+where:
+- $ \mu_\theta(x_t, t) $: The predicted mean of the distribution, parameterized by the model.
+- $ \Sigma_\theta(x_t, t) $: The predicted variance of the distribution, parameterized by the model.
+
+The model learns $ \mu_\theta $ and $ \Sigma_\theta $ during training.
+
+---
+
+### 3. **Mean Prediction**
+The mean $ \mu_\theta(x_t, t) $ is computed using the predicted noise $ \epsilon_\theta(x_t, t) $ and the accumulated noise schedule $ \bar{\alpha}_t $:
+
+$$
+\mu_\theta(x_t, t) = \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar{\alpha}_t}} \cdot \epsilon_\theta(x_t, t) \right).
+$$
+
+#### Explanation:
+- $ x_t $: The noisy sample at time step $ t $.
+- $ \epsilon_\theta(x_t, t) $: The predicted noise component by the model.
+- $ \alpha_t $: The noise scheduling parameter at time step $ t $.
+- $ \bar{\alpha}_t $: The cumulative product of noise scheduling parameters up to time $ t $.
+
+This equation ensures that the model removes the predicted noise from $ x_t $ to compute $ x_{t-1} $.
+
+---
+
+### 4. **Variance Prediction**
+The variance $ \Sigma_\theta(x_t, t) $ is typically fixed or learned during training. Common choices include:
+- A fixed schedule based on the forward process.
+- A learned parameter that adapts to the data.
+
+---
+
+### 5. **Iterative Denoising**
+The backward process iteratively denoises the sample $ x_t $ over $ T $ steps, starting from $ x_T $ and ending at $ x_0 $, which is the reconstructed data:
+
+$$
+x_T \to x_{T-1} \to \dots \to x_1 \to x_0.
+$$
+
+At each step, the model predicts the noise and removes it to compute the sample for the previous time step.
+
+---
+
+## Mathematical Representation of the Backward Process
+
+The backward process can also be expressed as a series of conditional probabilities:
+
+$$
+p(x_0, x_1, \dots, x_T) = p(x_T) \prod_{t=1}^T p(x_{t-1} \mid x_t),
+$$
+
+where:
+- $ p(x_T) = \mathcal{N}(x_T; 0, I) $: The initial Gaussian noise distribution.
+- $ p(x_{t-1} \mid x_t) $: The reverse transition distribution, learned by the model.
+
+---
+
+## Summary of the Backward Process
+
+1. **Starting Point**: Begin with a noisy sample $ x_T \sim \mathcal{N}(0, I) $.
+2. **Reverse Transition**: Iteratively compute $ x_{t-1} $ from $ x_t $ using the learned reverse distribution $ p(x_{t-1} \mid x_t) $.
+3. **Noise Prediction**: Use the model to predict the noise $ \epsilon_\theta(x_t, t) $ and compute the mean $ \mu_\theta(x_t, t) $.
+4. **Iterative Denoising**: Gradually remove noise over $ T $ steps to reconstruct the original data $ x_0 $.
+5. **Training**: Train the model by minimizing the difference between the predicted noise and the true noise.
+
+The backward process is the core of diffusion models, enabling them to generate high-quality samples by reversing the noise corruption applied during the forward process.
+
 
 
